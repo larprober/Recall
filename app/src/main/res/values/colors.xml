@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="header">#7C2D91</color>
+    <color name="on_header">#FFFFFF</color>
+    <color name="on_header_dim">#E6D6F0</color>
+    <color name="bg">#12101A</color>
+    <color name="on_bg">#F2EEF7</color>
+    <color name="on_bg_dim">#9C93AD</color>
+    <color name="divider">#241F30</color>
+    <color name="ic_bg">#7C2D91</color>
+</resources>

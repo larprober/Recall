@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Recall</string>
+    <string name="grant">Grant permissions</string>
+    <string name="status_armed">Armed - calls are recorded automatically</string>
+    <string name="status_needs_permissions">Grant permissions to start auto-recording</string>
+    <string name="empty">No recordings yet.\nMake or answer a call and it will appear here.</string>
+    <string name="share">Share</string>
+    <string name="auto_speaker">Auto speakerphone (captures the other side)</string>
+</resources>

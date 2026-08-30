@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
+import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -30,6 +31,10 @@ class MainActivity : AppCompatActivity() {
     private var playingId: Long? = null
     private var items: List<Recording> = emptyList()
 
+    private var testRecorder: MediaRecorder? = null
+    private var testFile: File? = null
+    private var testStart = 0L
+
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             refresh()
@@ -48,6 +53,8 @@ class MainActivity : AppCompatActivity() {
             Prefs.setAutoSpeaker(this, checked)
         }
 
+        binding.testButton.setOnClickListener { toggleTest() }
+
         binding.list.setOnItemClickListener { _, _, position, _ ->
             togglePlay(items[position])
         }
@@ -65,6 +72,84 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         stopPlayback()
+        if (testRecorder != null) stopTest()
+    }
+
+    // ---- test recording (mic) ----------------------------------------------
+    // Records a few seconds straight from the microphone so you can confirm
+    // playback and sharing work with a known-good file, independent of the
+    // call-audio restrictions that can silence real call recordings.
+
+    private fun toggleTest() {
+        if (testRecorder != null) stopTest() else startTest()
+    }
+
+    private fun startTest() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Grant microphone permission first", Toast.LENGTH_SHORT).show()
+            requestPermissions()
+            return
+        }
+        stopPlayback()
+        val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val file = File(RecordingStore.audioDir(this), "test_$stamp.m4a")
+        val rec = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            MediaRecorder(this) else @Suppress("DEPRECATION") MediaRecorder()
+        try {
+            rec.setAudioSource(MediaRecorder.AudioSource.MIC)
+            rec.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            rec.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            rec.setAudioChannels(1)
+            rec.setAudioEncodingBitRate(128_000)
+            rec.setAudioSamplingRate(44_100)
+            rec.setOutputFile(file.absolutePath)
+            rec.prepare()
+            rec.start()
+        } catch (e: Exception) {
+            runCatching { rec.release() }
+            Toast.makeText(this, "Couldn't start mic: ${e.message}", Toast.LENGTH_SHORT).show()
+            return
+        }
+        testRecorder = rec
+        testFile = file
+        testStart = System.currentTimeMillis()
+        binding.testButton.text = getString(R.string.test_stop)
+        Toast.makeText(this, "Recording - say something, then tap stop", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun stopTest() {
+        val rec = testRecorder ?: return
+        val file = testFile
+        var ok = true
+        try {
+            rec.stop()
+        } catch (e: Exception) {
+            ok = false
+        } finally {
+            runCatching { rec.release() }
+            testRecorder = null
+        }
+        binding.testButton.text = getString(R.string.test_record)
+        if (ok && file != null && file.exists() && file.length() > 1024) {
+            RecordingStore.add(
+                this,
+                Recording(
+                    id = testStart,
+                    filePath = file.absolutePath,
+                    number = "Test (mic)",
+                    direction = "test",
+                    startTime = testStart,
+                    durationMs = System.currentTimeMillis() - testStart
+                )
+            )
+            Toast.makeText(this, "Saved - tap it to play", Toast.LENGTH_SHORT).show()
+        } else {
+            runCatching { file?.delete() }
+            Toast.makeText(this, "Recording too short", Toast.LENGTH_SHORT).show()
+        }
+        testFile = null
+        refresh()
     }
 
     private fun requiredPermissions(): Array<String> {
@@ -111,7 +196,11 @@ class MainActivity : AppCompatActivity() {
                 )
                 val rec = items[position]
                 v.findViewById<TextView>(R.id.title).text =
-                    (if (rec.direction == "out") "↗ " else "↙ ") + rec.number
+                    (when (rec.direction) {
+                        "out" -> "↗ "
+                        "test" -> "● "
+                        else -> "↙ "
+                    }) + rec.number
                 v.findViewById<TextView>(R.id.subtitle).text =
                     "${dateFmt.format(Date(rec.startTime))}  ·  ${formatDur(rec.durationMs)}" +
                         if (playingId == rec.id) "  ▶ playing" else ""

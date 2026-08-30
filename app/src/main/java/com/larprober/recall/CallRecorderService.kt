@@ -109,6 +109,7 @@ class CallRecorderService : Service() {
                 rec.setAudioSource(src)
                 rec.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 rec.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                rec.setAudioChannels(1)
                 rec.setAudioEncodingBitRate(128_000)
                 rec.setAudioSamplingRate(44_100)
                 rec.setOutputFile(file.absolutePath)
@@ -135,15 +136,19 @@ class CallRecorderService : Service() {
         val file = outputFile
         val savedNumber = currentNumber
         val savedDir = if (outgoing) "out" else "in"
+        var stopOk = true
         try {
             rec.stop()
         } catch (e: Exception) {
-            Log.w(TAG, "stop() failed (call too short?): ${e.message}")
+            // A failed stop() means the MP4 was never finalized -> the file is
+            // corrupt and unplayable. Don't keep it.
+            stopOk = false
+            Log.w(TAG, "stop() failed (call too short / no audio?): ${e.message}")
         } finally {
             runCatching { rec.release() }
             recorder = null
         }
-        if (file != null && file.exists() && file.length() > 0) {
+        if (stopOk && file != null && file.exists() && file.length() > 1024) {
             RecordingStore.add(
                 this,
                 Recording(

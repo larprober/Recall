@@ -7,4 +7,6 @@
     <string name="empty">No recordings yet.\nMake or answer a call and it will appear here.</string>
     <string name="share">Share</string>
     <string name="auto_speaker">Auto speakerphone (captures the other side)</string>
+    <string name="test_record">Record test (mic)</string>
+    <string name="test_stop">Stop test recording</string>
 </resources>

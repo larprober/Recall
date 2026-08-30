@@ -11,7 +11,7 @@ object Prefs {
         ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
     fun autoSpeaker(ctx: Context): Boolean =
-        prefs(ctx).getBoolean(KEY_AUTO_SPEAKER, false)
+        prefs(ctx).getBoolean(KEY_AUTO_SPEAKER, true)
 
     fun setAutoSpeaker(ctx: Context, value: Boolean) {
         prefs(ctx).edit().putBoolean(KEY_AUTO_SPEAKER, value).apply()

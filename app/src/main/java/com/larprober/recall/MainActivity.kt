@@ -53,6 +53,14 @@ class MainActivity : AppCompatActivity() {
             Prefs.setAutoSpeaker(this, checked)
         }
 
+        updateModeButton()
+        binding.modeButton.setOnClickListener {
+            val next = (Prefs.sourceIndex(this) + 1) % Prefs.MODE_COUNT
+            Prefs.setSourceIndex(this, next)
+            updateModeButton()
+            Toast.makeText(this, "Call mode: ${modeName(next)}", Toast.LENGTH_SHORT).show()
+        }
+
         binding.testButton.setOnClickListener { toggleTest() }
 
         binding.list.setOnItemClickListener { _, _, position, _ ->
@@ -79,6 +87,15 @@ class MainActivity : AppCompatActivity() {
     // Records a few seconds straight from the microphone so you can confirm
     // playback and sharing work with a known-good file, independent of the
     // call-audio restrictions that can silence real call recordings.
+
+    private fun modeName(index: Int): String =
+        resources.getStringArray(R.array.record_modes)
+            .getOrElse(index) { "Auto" }
+
+    private fun updateModeButton() {
+        binding.modeButton.text =
+            getString(R.string.mode_prefix, modeName(Prefs.sourceIndex(this)))
+    }
 
     private fun toggleTest() {
         if (testRecorder != null) stopTest() else startTest()

@@ -92,15 +92,21 @@ class CallRecorderService : Service() {
         val safeNum = currentNumber.replace(Regex("[^0-9+]"), "").ifBlank { "unknown" }
         val file = File(RecordingStore.audioDir(this), "${stamp}_${dir}_$safeNum.m4a")
 
-        // Prefer true call sources; fall back to MIC. On modern stock Android the
-        // call sources are usually blocked, so MIC is what actually succeeds
-        // (your side clear, far side faint unless the call is on speaker).
-        val sources = intArrayOf(
-            MediaRecorder.AudioSource.VOICE_CALL,
-            MediaRecorder.AudioSource.VOICE_COMMUNICATION,
-            MediaRecorder.AudioSource.VOICE_RECOGNITION,
-            MediaRecorder.AudioSource.MIC
-        )
+        // Mode 0 (Auto) tries every source in order and keeps the first that
+        // starts. Modes 1-4 force a single source so you can find, by trial,
+        // which one actually captures audio on your specific phone.
+        val sources = when (Prefs.sourceIndex(this)) {
+            1 -> intArrayOf(MediaRecorder.AudioSource.VOICE_CALL)
+            2 -> intArrayOf(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+            3 -> intArrayOf(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+            4 -> intArrayOf(MediaRecorder.AudioSource.MIC)
+            else -> intArrayOf(
+                MediaRecorder.AudioSource.VOICE_CALL,
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                MediaRecorder.AudioSource.MIC
+            )
+        }
 
         for (src in sources) {
             val rec = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)

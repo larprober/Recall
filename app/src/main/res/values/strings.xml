@@ -9,4 +9,12 @@
     <string name="auto_speaker">Auto speakerphone (captures the other side)</string>
     <string name="test_record">Record test (mic)</string>
     <string name="test_stop">Stop test recording</string>
+    <string name="mode_prefix">Call mode: %1$s</string>
+    <string-array name="record_modes">
+        <item>Auto</item>
+        <item>Voice call (both sides)</item>
+        <item>Voice communication</item>
+        <item>Voice recognition</item>
+        <item>Microphone + speaker</item>
+    </string-array>
 </resources>
